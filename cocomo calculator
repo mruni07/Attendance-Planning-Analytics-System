@@ -1,0 +1,101 @@
+"""
+Basic COCOMO (Constructive Cost Model) Calculator
+Attendance Planning and Analytics System
+
+Computes:
+    Effort (E)       = a * (KLOC)^b         person-months
+    Development Time (D) = c * (E)^d        months
+    Average Staff (P) = E / D               persons
+
+Modes:
+    Organic        -> a=2.4, b=1.05, c=2.5, d=0.38
+    Semi-detached  -> a=3.0, b=1.12, c=2.5, d=0.35
+    Embedded       -> a=3.6, b=1.20, c=2.5, d=0.32
+"""
+
+# Mode -> (a, b, c, d) coefficients
+COCOMO_MODES = {
+    "organic":       {"a": 2.4, "b": 1.05, "c": 2.5, "d": 0.38},
+    "semi-detached": {"a": 3.0, "b": 1.12, "c": 2.5, "d": 0.35},
+    "embedded":      {"a": 3.6, "b": 1.20, "c": 2.5, "d": 0.32},
+}
+
+
+def calculate_cocomo(kloc: float, mode: str):
+    """
+    Calculate Effort, Development Time, and Average Staff
+    using the Basic COCOMO model.
+
+    Args:
+        kloc (float): Estimated size of the project in KLOC (thousands of lines of code)
+        mode (str): One of "organic", "semi-detached", "embedded"
+
+    Returns:
+        dict: effort, time, staff, and the coefficients used
+    """
+    mode = mode.strip().lower()
+    if mode not in COCOMO_MODES:
+        raise ValueError(
+            f"Invalid mode '{mode}'. Choose from: {', '.join(COCOMO_MODES.keys())}"
+        )
+    if kloc <= 0:
+        raise ValueError("KLOC must be a positive number.")
+
+    coeffs = COCOMO_MODES[mode]
+    a, b, c, d = coeffs["a"], coeffs["b"], coeffs["c"], coeffs["d"]
+
+    effort = a * (kloc ** b)          # person-months
+    time = c * (effort ** d)          # months
+    staff = effort / time             # average number of people
+
+    return {
+        "mode": mode,
+        "kloc": kloc,
+        "coefficients": coeffs,
+        "effort_person_months": round(effort, 2),
+        "development_time_months": round(time, 2),
+        "average_staff": round(staff, 2),
+    }
+
+
+def print_report(result: dict):
+    """Pretty-print the COCOMO result."""
+    print("\n" + "=" * 45)
+    print(" BASIC COCOMO ESTIMATION REPORT")
+    print("=" * 45)
+    print(f" Project Size (KLOC) : {result['kloc']}")
+    print(f" Mode Selected       : {result['mode'].title()}")
+    c = result["coefficients"]
+    print(f" Coefficients        : a={c['a']}, b={c['b']}, c={c['c']}, d={c['d']}")
+    print("-" * 45)
+    print(f" Effort (E)          : {result['effort_person_months']} person-months")
+    print(f" Development Time (D): {result['development_time_months']} months")
+    print(f" Average Staff (P)   : {result['average_staff']} persons")
+    print("=" * 45 + "\n")
+
+
+def run_interactive():
+    """Interactive CLI: user enters KLOC and selects a mode."""
+    print("Basic COCOMO Calculator — Attendance Planning and Analytics System")
+    print("Available modes: Organic | Semi-detached | Embedded\n")
+
+    try:
+        kloc = float(input("Enter estimated size in KLOC (e.g. 5): ").strip())
+        mode = input("Select mode (organic / semi-detached / embedded): ").strip()
+        result = calculate_cocomo(kloc, mode)
+        print_report(result)
+    except ValueError as e:
+        print(f"\nError: {e}\n")
+
+
+if __name__ == "__main__":
+    # ---- Option 1: Interactive mode (uncomment to use) ----
+    run_interactive()
+
+    # ---- Option 2: Hard-fixed example (as used in the SRS doc) ----
+    # fixed_result = calculate_cocomo(kloc=5, mode="organic")
+    # print_report(fixed_result)
+
+    # ---- Option 3: Compare all three modes for the same KLOC ----
+    # for m in COCOMO_MODES:
+    #     print_report(calculate_cocomo(kloc=5, mode=m))
